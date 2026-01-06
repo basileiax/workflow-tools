@@ -89,7 +89,6 @@
     </div>
 
     <script>
-        // ▼▼▼ 약관 파일 경로 ▼▼▼
         const FIXED_BASE_URL = "https://cdn.apthefin.com/img/store/terms/"; 
         
         // --- Functions ---
@@ -101,7 +100,7 @@
             
             input.value = "";
             frame.src = "about:blank";
-            emptyState.style.display = 'flex'; // 빈 화면 표시
+            emptyState.style.display = 'flex';
             input.focus();
         }
 
@@ -114,7 +113,6 @@
                 return null;
             }
 
-            // 사용자가 .pdf를 입력하지 않았을 경우 자동 추가
             if (!filename.toLowerCase().endsWith('.pdf')) {
                 filename += ".pdf";
             }
@@ -125,17 +123,15 @@
         function loadPdf() {
             const url = getFullUrl();
             if (url) {
-                document.getElementById('empty-state').style.display = 'none'; // 빈 화면 숨김
+                document.getElementById('empty-state').style.display = 'none';
                 document.getElementById('preview-frame').src = url;
             }
         }
 
         // --- Event Listeners ---
         
-        // 페이지 로드 시 초기화
         window.onload = resetUI;
-        
-        // 엔터키 입력 시 실행
+
         document.getElementById('filename-input').addEventListener("keypress", function(e) {
             if (e.key === "Enter") loadPdf();
         });
