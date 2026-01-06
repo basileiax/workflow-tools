@@ -6,6 +6,8 @@
 // @match        https://*.apthefin.com/app/loan-product-preview*
 // @run-at       document-idle
 // @grant        none
+// @updateURL    https://basileiax.github.io/workflow-tools/demo/loan-product-preview/capture-helper.user.js
+// @downloadURL  https://basileiax.github.io/workflow-tools/demo/loan-product-preview/capture-helper.user.js
 // ==/UserScript==
 
 (() => {
