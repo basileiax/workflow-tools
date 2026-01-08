@@ -181,6 +181,11 @@
             if (e.key === 'Enter') AppModal.btnConfirm.click();
         });
 
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && !AppModal.overlay.classList.contains('hidden')) {
+                AppModal.close(null);
+            }
+        });
 
         // --- Configuration & Storage Logic ---
         const STORAGE_KEY = "preview_base_url";
