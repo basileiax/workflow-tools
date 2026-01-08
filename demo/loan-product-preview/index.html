@@ -110,7 +110,7 @@
         </div>
     </div>
 
-    <script>
+<script>
         // --- Custom Modal System ---
         const AppModal = {
             overlay: document.getElementById('custom-modal-overlay'),
@@ -181,6 +181,7 @@
             if (e.key === 'Enter') AppModal.btnConfirm.click();
         });
 
+
         // --- Configuration & Storage Logic ---
         const STORAGE_KEY = "preview_base_url";
         let BASE_URL = localStorage.getItem(STORAGE_KEY) || "";
@@ -192,8 +193,14 @@
             if (paramHost) {
                 BASE_URL = paramHost;
                 localStorage.setItem(STORAGE_KEY, BASE_URL);
-                window.history.replaceState({}, document.title, window.location.pathname);
+                
+                let cleanPath = window.location.pathname;
+                cleanPath = cleanPath.replace(/\/index\.html$/, '');
+                cleanPath = cleanPath.replace(/\/$/, '');
+                
+                window.history.replaceState({}, document.title, cleanPath);
             }
+            
             updateStatusUI();
             resetUI();
         }
@@ -203,7 +210,7 @@
             if (BASE_URL) {
                 statusBtn.innerHTML = `서버 설정됨 <span class="text-green-500">●</span>`;
                 statusBtn.className = "text-[11px] px-2 py-0.5 rounded-full bg-green-50 border border-green-200 text-green-700 hover:bg-green-100 cursor-pointer transition-colors flex items-center gap-1";
-                statusBtn.title = "서버 주소가 설정되어 있습니다.";
+                statusBtn.title = "서버 주소가 설정되어 있습니다. ";
             } else {
                 statusBtn.innerHTML = `설정 필요 <span class="text-red-500">●</span>`;
                 statusBtn.className = "text-[11px] px-2 py-0.5 rounded-full bg-red-50 border border-red-200 text-red-600 hover:bg-red-100 cursor-pointer transition-colors flex items-center gap-1";
