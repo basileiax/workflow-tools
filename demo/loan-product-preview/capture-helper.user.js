@@ -1,8 +1,8 @@
 // ==UserScript==
 // @name         Finance Preview Capture Helper
 // @namespace    capture-helper
-// @version      1.5.4
-// @description  템플릿 재구축 + 코드 구조화 + 추출 안정화 + 출력 품질 향상
+// @version      1.5.5
+// @description  템플릿 재구축 + 코드 구조화 + 추출 안정화 + 출력 품질 향상 + HTML 정규화 케이스 추가
 // @include      *://*/*loan-product-preview*
 // @require      https://cdnjs.cloudflare.com/ajax/libs/html-to-image/1.11.11/html-to-image.min.js
 // @connect      *
@@ -269,29 +269,51 @@
 
     function sanitizeAndNormalizeHTML(html) {
       if (!html) return '';
+
       const ALLOWED = new Set(['P', 'BR', 'UL', 'OL', 'LI', 'STRONG']);
       const REMOVE_WITH_CONTENT = new Set(['STYLE', 'SCRIPT', 'LINK', 'META', 'NOSCRIPT', 'IMG', 'IFRAME']);
+      const BLOCK_TAGS = new Set(['P', 'UL', 'OL', 'DIV', 'H1', 'H2', 'H3', 'H4', 'H5', 'H6']);
+
       const tpl = document.createElement('template');
       tpl.innerHTML = html;
+
       const walker = document.createTreeWalker(tpl.content, NodeFilter.SHOW_ELEMENT, null);
       const nodes = [];
       let n = walker.nextNode();
       while (n) { nodes.push(n); n = walker.nextNode(); }
+
       for (const el of nodes) {
         if (!el.parentNode) continue;
         const tag = el.tagName;
+
         if (REMOVE_WITH_CONTENT.has(tag)) {
           el.remove();
           continue;
         }
+
         if (tag === 'B') {
           const strong = document.createElement('strong');
-          while (el.firstChild) {
-            strong.appendChild(el.firstChild);
-          }
+          while (el.firstChild) { strong.appendChild(el.firstChild); }
           el.parentNode.replaceChild(strong, el);
           continue;
         }
+
+        if (tag === 'DIV') {
+          const parent = el.parentNode;
+          let lastChild = el.lastElementChild;
+
+          while (el.firstChild) {
+            parent.insertBefore(el.firstChild, el);
+          }
+
+          if (lastChild && BLOCK_TAGS.has(lastChild.tagName)) {
+            parent.removeChild(el);
+          } else {
+            parent.replaceChild(document.createElement('br'), el);
+          }
+          continue;
+        }
+
         if (!ALLOWED.has(tag)) {
           const parent = el.parentNode;
           while (el.firstChild) {
@@ -300,6 +322,7 @@
           parent.removeChild(el);
           continue;
         }
+
         if (el.hasAttributes()) {
           const attrs = Array.from(el.attributes);
           for (const attr of attrs) {
@@ -307,9 +330,15 @@
           }
         }
       }
-      tpl.content.querySelectorAll('p:empty, strong:empty, li:empty, ul:empty, ol:empty').forEach(el => el.remove());
-      return tpl.innerHTML.trim();
-    }
+
+  tpl.content.querySelectorAll('p:empty, strong:empty, li:empty, ul:empty, ol:empty').forEach(el => el.remove());
+
+  let result = tpl.innerHTML;
+  result = result.replace(/(<\/(ul|ol|p)>)\s*<br\s*\/?>/gi, '$1');
+  result = result.replace(/(<br\s*\/?>\s*){3,}/gi, '<br><br>');
+
+  return result.trim();
+}
 
     function findLogoNormalized() {
       const heroContainer = qs(HINTS.hero);
