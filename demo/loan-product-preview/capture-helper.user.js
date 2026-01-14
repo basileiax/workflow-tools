@@ -1,5 +1,5 @@
 // ==UserScript==
-// @name         Finance Preview Capture Helper (Universal)
+// @name         Finance Preview Capture Helper
 // @namespace    capture-helper
 // @version      1.5.4
 // @description  템플릿 재구축 + 코드 구조화 + 추출 안정화 + 출력 품질 향상
