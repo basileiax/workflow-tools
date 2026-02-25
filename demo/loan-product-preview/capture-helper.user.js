@@ -1,8 +1,8 @@
 // ==UserScript==
 // @name         Finance Preview Capture Helper
 // @namespace    capture-helper
-// @version      1.5.5
-// @description  템플릿 재구축 + 코드 구조화 + 추출 안정화 + 출력 품질 향상 + HTML 정규화 케이스 추가
+// @version      1.5.6
+// @description  템플릿 재구축 + 코드 구조화 + 추출 안정화 + 출력 품질 향상 + HTML 정규화 케이스 추가 + HTML 정제 분기 처리
 // @include      *://*/*loan-product-preview*
 // @require      https://cdnjs.cloudflare.com/ajax/libs/html-to-image/1.11.11/html-to-image.min.js
 // @connect      *
@@ -95,9 +95,7 @@
       const dialog = document.querySelector('[role="dialog"][aria-modal="true"]');
       if (!dialog) return false;
       const style = window.getComputedStyle(dialog);
-      if (style.display === 'none' || style.visibility === 'hidden') {
-        return false;
-      }
+      if (style.display === 'none' || style.visibility === 'hidden') return false;
       const buttons = Array.from(dialog.querySelectorAll('button'));
       const hasConfirmBtn = buttons.some(btn => btn.textContent.trim() === '확인');
       if (hasConfirmBtn) {
@@ -113,12 +111,7 @@
       const hero = qs(HINTS.hero);
       const stats = qs(HINTS.stats);
       if (hero || stats) return true;
-      console.debug('[CAP.Validator] Waiting for elements:', {
-        heroSelector: HINTS.hero,
-        statsSelector: HINTS.stats,
-        heroFound: !!hero,
-        statsFound: !!stats
-      });
+      console.debug('[CAP.Validator] Waiting for elements:', { heroSelector: HINTS.hero, statsSelector: HINTS.stats, heroFound: !!hero, statsFound: !!stats });
       return false;
     }
 
@@ -132,7 +125,6 @@
       return new Promise((resolve) => {
         if (!src) return resolve('');
         if (src.startsWith('data:image/')) return resolve(src);
-
         GM_xmlhttpRequest({
           method: 'GET',
           url: src,
@@ -141,10 +133,7 @@
           onload(response) {
             if (response.status === 200 && response.response) {
               const fr = new FileReader();
-              fr.onload = () => {
-                console.log('[CAP.Image] Logo converted to Base64');
-                resolve(String(fr.result || ''));
-              };
+              fr.onload = () => resolve(String(fr.result || ''));
               fr.onerror = () => resolve('');
               fr.readAsDataURL(response.response);
             } else {
@@ -176,11 +165,7 @@
 
     function sanitize(s) {
       if (!s) return '';
-      return String(s)
-        .replace(/[\u0000-\u001F\u007F]/g, '')
-        .replace(/[\\\/:*?"<>|]/g, ' ')
-        .replace(/\s+/g, ' ')
-        .trim();
+      return String(s).replace(/[\u0000-\u001F\u007F]/g, '').replace(/[\\\/:*?"<>|]/g, ' ').replace(/\s+/g, ' ').trim();
     }
 
     function applySpacePolicy(s, mode) {
@@ -193,9 +178,7 @@
     function getSpaceMode() {
       const params = new URLSearchParams(window.location.search);
       const paramMode = params.get('productSpace');
-      if (paramMode === 'concat' || paramMode === 'underscore' || paramMode === 'keep') {
-        return paramMode;
-      }
+      if (paramMode === 'concat' || paramMode === 'underscore' || paramMode === 'keep') return paramMode;
       return FILENAME_PRODUCT_SPACE_MODE;
     }
 
@@ -228,38 +211,15 @@
     const HINTS = CAP.ContainerHints;
     const FALLBACK = CAP.Selectors.FALLBACK_HASH;
 
-    function normText(s) {
-      return String(s || '').replace(/\s+/g, ' ').trim();
-    }
-
-    function hasDigits(s) {
-      return /[0-9]/.test(String(s || ''));
-    }
-
-    function isLikelyCdnUrl(src) {
-      try {
-        const u = new URL(src, location.href);
-        return u.protocol.startsWith('http') && !!u.hostname;
-      } catch {
-        return false;
-      }
-    }
-
+    function normText(s) { return String(s || '').replace(/\s+/g, ' ').trim(); }
+    function hasDigits(s) { return /[0-9]/.test(String(s || '')); }
+    function isLikelyCdnUrl(src) { try { const u = new URL(src, location.href); return u.protocol.startsWith('http') && !!u.hostname; } catch { return false; } }
     function isNonSvgRaster(src) {
       const s = String(src || '').toLowerCase();
       if (!s) return false;
       if (s.endsWith('.svg') || s.includes('.svg?') || s.startsWith('data:image/svg')) return false;
-      return (
-        s.endsWith('.png') || s.includes('.png?') ||
-        s.endsWith('.jpg') || s.includes('.jpg?') ||
-        s.endsWith('.jpeg') || s.includes('.jpeg?') ||
-        s.endsWith('.webp') || s.includes('.webp?') ||
-        s.startsWith('data:image/png') ||
-        s.startsWith('data:image/jpeg') ||
-        s.startsWith('data:image/webp')
-      );
+      return s.endsWith('.png') || s.includes('.png?') || s.endsWith('.jpg') || s.includes('.jpg?') || s.endsWith('.jpeg') || s.includes('.jpeg?') || s.endsWith('.webp') || s.includes('.webp?') || s.startsWith('data:image/png') || s.startsWith('data:image/jpeg') || s.startsWith('data:image/webp');
     }
-
     function findTextAnchor(needle, scope) {
       const root = scope || document;
       const all = Array.from(root.querySelectorAll('p,span,div,h1,h2,h3,b,strong'));
@@ -267,113 +227,107 @@
       return all.find((el) => normText(el.textContent) === target) || null;
     }
 
-    function sanitizeAndNormalizeHTML(html) {
-      if (!html) return '';
+    function detectAdvancedListStyle(tpl) {
+      const styleEls = tpl.content.querySelectorAll('style');
+      for (const styleEl of styleEls) {
+        const css = styleEl.textContent || '';
+        if (css.includes('@counter-style circled')) {
+          console.log('[CAP.Extractor] Detected: Advanced List Style');
+          return true;
+        }
+      }
+      return false;
+    }
 
-      const ALLOWED = new Set(['P', 'BR', 'UL', 'OL', 'LI', 'STRONG']);
+    function sanitizeLegacy(tpl) {
+      const ALLOWED = new Set(['P', 'BR', 'UL', 'OL', 'LI', 'STRONG', 'SUP', 'SUB']);
       const REMOVE_WITH_CONTENT = new Set(['STYLE', 'SCRIPT', 'LINK', 'META', 'NOSCRIPT', 'IMG', 'IFRAME']);
       const BLOCK_TAGS = new Set(['P', 'UL', 'OL', 'DIV', 'H1', 'H2', 'H3', 'H4', 'H5', 'H6']);
-
-      const tpl = document.createElement('template');
-      tpl.innerHTML = html;
-
       const walker = document.createTreeWalker(tpl.content, NodeFilter.SHOW_ELEMENT, null);
       const nodes = [];
       let n = walker.nextNode();
       while (n) { nodes.push(n); n = walker.nextNode(); }
-
       for (const el of nodes) {
         if (!el.parentNode) continue;
         const tag = el.tagName;
-
-        if (REMOVE_WITH_CONTENT.has(tag)) {
-          el.remove();
-          continue;
-        }
-
-        if (tag === 'B') {
-          const strong = document.createElement('strong');
-          while (el.firstChild) { strong.appendChild(el.firstChild); }
-          el.parentNode.replaceChild(strong, el);
-          continue;
-        }
-
+        if (REMOVE_WITH_CONTENT.has(tag)) { el.remove(); continue; }
+        if (tag === 'B') { const strong = document.createElement('strong'); while (el.firstChild) { strong.appendChild(el.firstChild); } el.parentNode.replaceChild(strong, el); continue; }
         if (tag === 'DIV') {
           const parent = el.parentNode;
-          let lastChild = el.lastElementChild;
-
-          while (el.firstChild) {
-            parent.insertBefore(el.firstChild, el);
-          }
-
-          if (lastChild && BLOCK_TAGS.has(lastChild.tagName)) {
-            parent.removeChild(el);
-          } else {
-            parent.replaceChild(document.createElement('br'), el);
-          }
+          const lastChild = el.lastElementChild;
+          while (el.firstChild) { parent.insertBefore(el.firstChild, el); }
+          let needBr = true;
+          if (lastChild && BLOCK_TAGS.has(lastChild.tagName)) { needBr = false; }
+          if (needBr) { const br = document.createElement('br'); parent.replaceChild(br, el); } else { parent.removeChild(el); }
           continue;
         }
-
-        if (!ALLOWED.has(tag)) {
-          const parent = el.parentNode;
-          while (el.firstChild) {
-            parent.insertBefore(el.firstChild, el);
-          }
-          parent.removeChild(el);
-          continue;
-        }
-
-        if (el.hasAttributes()) {
-          const attrs = Array.from(el.attributes);
-          for (const attr of attrs) {
-            el.removeAttribute(attr.name);
-          }
-        }
+        if (!ALLOWED.has(tag)) { const parent = el.parentNode; while (el.firstChild) { parent.insertBefore(el.firstChild, el); } parent.removeChild(el); continue; }
+        if (el.hasAttributes()) { const attrs = Array.from(el.attributes); for (const attr of attrs) { el.removeAttribute(attr.name); } }
       }
+      tpl.content.querySelectorAll('p:empty, strong:empty, li:empty, ul:empty, ol:empty').forEach(el => el.remove());
+      let result = tpl.innerHTML;
+      result = result.replace(/(<\/(ul|ol|p)>)\s*<br\s*\/?>/gi, '$1');
+      result = result.replace(/(<br\s*\/?>\s*){3,}/gi, '<br><br>');
+      return result.trim();
+    }
 
-  tpl.content.querySelectorAll('p:empty, strong:empty, li:empty, ul:empty, ol:empty').forEach(el => el.remove());
+    function sanitizeAdvanced(tpl) {
+      const ALLOWED = new Set(['P', 'BR', 'UL', 'OL', 'LI', 'STRONG', 'SUP', 'SUB']);
+      const REMOVE_WITH_CONTENT = new Set(['STYLE', 'SCRIPT', 'LINK', 'META', 'NOSCRIPT', 'IMG', 'IFRAME']);
+      const BLOCK_TAGS = new Set(['P', 'UL', 'OL', 'DIV', 'H1', 'H2', 'H3', 'H4', 'H5', 'H6']);
+      const walker = document.createTreeWalker(tpl.content, NodeFilter.SHOW_ELEMENT, null);
+      const nodes = [];
+      let n = walker.nextNode();
+      while (n) { nodes.push(n); n = walker.nextNode(); }
+      for (const el of nodes) {
+        if (!el.parentNode) continue;
+        const tag = el.tagName;
+        if (REMOVE_WITH_CONTENT.has(tag)) { el.remove(); continue; }
+        if (tag === 'B') { const strong = document.createElement('strong'); while (el.firstChild) { strong.appendChild(el.firstChild); } el.parentNode.replaceChild(strong, el); continue; }
+        if (tag === 'DIV') {
+          const parent = el.parentNode;
+          const lastChild = el.lastElementChild;
+          while (el.firstChild) { parent.insertBefore(el.firstChild, el); }
+          let needBr = true;
+          if (lastChild && BLOCK_TAGS.has(lastChild.tagName)) { needBr = false; }
+          if (needBr) { const br = document.createElement('br'); parent.replaceChild(br, el); } else { parent.removeChild(el); }
+          continue;
+        }
+        if (!ALLOWED.has(tag)) { const parent = el.parentNode; while (el.firstChild) { parent.insertBefore(el.firstChild, el); } parent.removeChild(el); continue; }
+        if (el.hasAttributes()) { const attrs = Array.from(el.attributes); for (const attr of attrs) { el.removeAttribute(attr.name); } }
+      }
+      tpl.content.querySelectorAll('p:empty, strong:empty, li:empty, ul:empty, ol:empty').forEach(el => el.remove());
+      let result = tpl.innerHTML;
+      result = result.replace(/(<\/(ul|ol)>)\s*<br\s*\/?>(?!\s*<p[\s>])/gi, '$1');
+      result = result.replace(/(<br\s*\/?>\s*){3,}/gi, '<br><br>');
+      return result.trim();
+    }
 
-  let result = tpl.innerHTML;
-  result = result.replace(/(<\/(ul|ol|p)>)\s*<br\s*\/?>/gi, '$1');
-  result = result.replace(/(<br\s*\/?>\s*){3,}/gi, '<br><br>');
-
-  return result.trim();
-}
+    function sanitizeAndNormalizeHTML(html) {
+      if (!html) return '';
+      const tpl = document.createElement('template');
+      tpl.innerHTML = html;
+      const useAdvanced = detectAdvancedListStyle(tpl);
+      if (useAdvanced) { return sanitizeAdvanced(tpl); } else { return sanitizeLegacy(tpl); }
+    }
 
     function findLogoNormalized() {
       const heroContainer = qs(HINTS.hero);
       if (heroContainer) {
-        const imgs = qsa('img', heroContainer).filter((img) => {
-          const src = img.getAttribute('src') || '';
-          return isNonSvgRaster(src) && isLikelyCdnUrl(src);
-        });
-        if (imgs.length) {
-          console.log('[CAP.Extractor] Logo via: container hint');
-          return imgs[0];
-        }
+        const imgs = qsa('img', heroContainer).filter((img) => { const src = img.getAttribute('src') || ''; return isNonSvgRaster(src) && isLikelyCdnUrl(src); });
+        if (imgs.length) { console.log('[CAP.Extractor] Logo via: container hint'); return imgs[0]; }
       }
       const byAlt = qs('img[alt="금융사 로고"]');
-      if (byAlt?.getAttribute('src')) {
-        console.log('[CAP.Extractor] Logo via: alt hint');
-        return byAlt;
-      }
-      const allImgs = qsa('img').filter((img) => {
-        const src = img.getAttribute('src') || '';
-        return isNonSvgRaster(src) && isLikelyCdnUrl(src);
-      });
+      if (byAlt?.getAttribute('src')) { console.log('[CAP.Extractor] Logo via: alt hint'); return byAlt; }
+      const allImgs = qsa('img').filter((img) => { const src = img.getAttribute('src') || ''; return isNonSvgRaster(src) && isLikelyCdnUrl(src); });
       for (const img of allImgs) {
         const block = img.closest('section,article,header,div') || img.parentElement;
         if (!block) continue;
         const ps = qsa('p', block).map((p) => txt(p)).filter(Boolean);
-        if (ps.length >= 2) {
-          console.log('[CAP.Extractor] Logo via: page scan heuristic');
-          return img;
-        }
+        if (ps.length >= 2) { console.log('[CAP.Extractor] Logo via: page scan heuristic'); return img; }
       }
       const fallbackLogo = findFirst(FALLBACK.LOGO);
-      if (fallbackLogo) {
-        console.log('[CAP.Extractor] Logo via: FALLBACK_HASH');
-      }
+      if (fallbackLogo) { console.log('[CAP.Extractor] Logo via: FALLBACK_HASH'); }
       return fallbackLogo;
     }
 
@@ -381,24 +335,15 @@
       const logoImg = findLogoNormalized();
       const rawSrc = logoImg?.getAttribute('src') || '';
       console.log('[CAP.Extractor] Found logo src:', rawSrc);
-      return {
-        element: logoImg,
-        dataURL: await toDataURL(rawSrc)
-      };
+      return { element: logoImg, dataURL: await toDataURL(rawSrc) };
     }
 
     function extractBankProduct(logoImg) {
-      let bank = '';
-      let product = '';
-      let via = '';
+      let bank = '', product = '', via = '';
       const heroContainer = qs(HINTS.hero);
       if (heroContainer) {
         const ps = qsa('p', heroContainer).map((p) => txt(p)).filter(Boolean);
-        if (ps.length >= 2) {
-          bank = ps[0];
-          product = ps[1];
-          via = 'container hint';
-        }
+        if (ps.length >= 2) { bank = ps[0]; product = ps[1]; via = 'container hint'; }
       }
       if ((!bank || !product) && logoImg) {
         const block = logoImg.closest('div') || logoImg.parentElement;
@@ -408,14 +353,8 @@
           if (!product && ps[1]) { product = ps[1]; via = via || 'logo vicinity'; }
         }
       }
-      if (!bank) {
-        const el = findFirst(FALLBACK.BANK);
-        if (el) { bank = txt(el); via = via || 'FALLBACK_HASH'; }
-      }
-      if (!product) {
-        const el = findFirst(FALLBACK.PRODUCT);
-        if (el) { product = txt(el); via = via || 'FALLBACK_HASH'; }
-      }
+      if (!bank) { const el = findFirst(FALLBACK.BANK); if (el) { bank = txt(el); via = via || 'FALLBACK_HASH'; } }
+      if (!product) { const el = findFirst(FALLBACK.PRODUCT); if (el) { product = txt(el); via = via || 'FALLBACK_HASH'; } }
       console.log('[CAP.Extractor] Bank/Product via:', via, { bank, product });
       return { bank, product };
     }
@@ -430,49 +369,23 @@
       const walker = document.createTreeWalker(card, NodeFilter.SHOW_ELEMENT, null);
       walker.currentNode = labelNode;
       let n = walker.nextNode();
-      while (n) {
-        const t = normText(n.textContent);
-        if (t && t !== labelT && hasDigits(t) && t.length <= 60) {
-          return t;
-        }
-        n = walker.nextNode();
-      }
+      while (n) { const t = normText(n.textContent); if (t && t !== labelT && hasDigits(t) && t.length <= 60) { return t; } n = walker.nextNode(); }
       return '';
     }
 
     function extractStatValues() {
-      let rate = '';
-      let limit = '';
-      let via = '';
+      let rate = '', limit = '', via = '';
       const statsContainer = qs(HINTS.stats);
-      if (statsContainer) {
-        rate = pickValueNearLabel('금리', statsContainer);
-        limit = pickValueNearLabel('한도', statsContainer);
-        if (rate || limit) via = 'container hint + label anchor';
-      }
-      if (!rate) {
-        rate = pickValueNearLabel('금리', document);
-        if (rate && !via) via = 'page scan + label anchor';
-      }
-      if (!limit) {
-        limit = pickValueNearLabel('한도', document);
-        if (limit && !via) via = 'page scan + label anchor';
-      }
+      if (statsContainer) { rate = pickValueNearLabel('금리', statsContainer); limit = pickValueNearLabel('한도', statsContainer); if (rate || limit) via = 'container hint + label anchor'; }
+      if (!rate) { rate = pickValueNearLabel('금리', document); if (rate && !via) via = 'page scan + label anchor'; }
+      if (!limit) { limit = pickValueNearLabel('한도', document); if (limit && !via) via = 'page scan + label anchor'; }
       if (!rate || !limit) {
         const labelEls = qsa(FALLBACK.STAT_LABELS.join(','));
         const valueEls = qsa(FALLBACK.STAT_VALUES.join(','));
         const pairs = [];
-        for (let i = 0; i < Math.min(labelEls.length, valueEls.length); i++) {
-          pairs.push({ label: txt(labelEls[i]), value: txt(valueEls[i]) });
-        }
-        if (!rate) {
-          const found = pairs.find((p) => p.label.includes('금리'));
-          if (found) { rate = found.value; via = via || 'FALLBACK_HASH'; }
-        }
-        if (!limit) {
-          const found = pairs.find((p) => p.label.includes('한도'));
-          if (found) { limit = found.value; via = via || 'FALLBACK_HASH'; }
-        }
+        for (let i = 0; i < Math.min(labelEls.length, valueEls.length); i++) { pairs.push({ label: txt(labelEls[i]), value: txt(valueEls[i]) }); }
+        if (!rate) { const found = pairs.find((p) => p.label.includes('금리')); if (found) { rate = found.value; via = via || 'FALLBACK_HASH'; } }
+        if (!limit) { const found = pairs.find((p) => p.label.includes('한도')); if (found) { limit = found.value; via = via || 'FALLBACK_HASH'; } }
       }
       console.log('[CAP.Extractor] StatValues via:', via, [rate, limit]);
       return [rate, limit];
@@ -481,14 +394,7 @@
     function extractInfoHTML() {
       let via = '';
       const infoContainer = qs(HINTS.info);
-      if (infoContainer) {
-        const html = infoContainer.innerHTML.trim();
-        if (html) {
-          via = 'container hint';
-          console.log('[CAP.Extractor] InfoHTML via:', via);
-          return sanitizeAndNormalizeHTML(html);
-        }
-      }
+      if (infoContainer) { const html = infoContainer.innerHTML.trim(); if (html) { via = 'container hint'; console.log('[CAP.Extractor] InfoHTML via:', via); return sanitizeAndNormalizeHTML(html); } }
       const markerRegex = /금융회사명[\s\S]*상품명/;
       const candidates = qsa('strong,b,p,div,span').filter((el) => markerRegex.test(normText(el.textContent)));
       for (const marker of candidates) {
@@ -498,20 +404,12 @@
           if (!block) break;
           const textLen = normText(block.innerText).length;
           const htmlLen = normText(block.innerHTML).length;
-          if (textLen >= 40 && htmlLen >= 80) {
-            via = 'marker heuristic';
-            console.log('[CAP.Extractor] InfoHTML via:', via);
-            return sanitizeAndNormalizeHTML(block.innerHTML.trim());
-          }
+          if (textLen >= 40 && htmlLen >= 80) { via = 'marker heuristic'; console.log('[CAP.Extractor] InfoHTML via:', via); return sanitizeAndNormalizeHTML(block.innerHTML.trim()); }
           cur = block.parentElement;
         }
       }
       const el = findFirst(FALLBACK.INFO);
-      if (el) {
-        via = 'FALLBACK_HASH';
-        console.log('[CAP.Extractor] InfoHTML via:', via);
-        return sanitizeAndNormalizeHTML(el.innerHTML.trim());
-      }
+      if (el) { via = 'FALLBACK_HASH'; console.log('[CAP.Extractor] InfoHTML via:', via); return sanitizeAndNormalizeHTML(el.innerHTML.trim()); }
       console.log('[CAP.Extractor] InfoHTML via: none (empty)');
       return '';
     }
@@ -529,11 +427,7 @@
             const textLen = normText(n.innerText || n.textContent).length;
             const htmlLen = normText(n.innerHTML).length;
             const hasList = !!(n.querySelector && n.querySelector('ul,ol,li'));
-            if (hasList || (textLen >= 30 && htmlLen >= 60)) {
-              via = 'container hint + title anchor';
-              console.log('[CAP.Extractor] NoticeHTML via:', via);
-              return sanitizeAndNormalizeHTML(n.innerHTML.trim());
-            }
+            if (hasList || (textLen >= 30 && htmlLen >= 60)) { via = 'container hint + title anchor'; console.log('[CAP.Extractor] NoticeHTML via:', via); return sanitizeAndNormalizeHTML(n.innerHTML.trim()); }
             n = walker.nextNode();
           }
         }
@@ -549,21 +443,13 @@
             const textLen = normText(n.innerText || n.textContent).length;
             const htmlLen = normText(n.innerHTML).length;
             const hasList = !!(n.querySelector && n.querySelector('ul,ol,li'));
-            if (hasList || (textLen >= 30 && htmlLen >= 60)) {
-              via = 'page scan + title anchor';
-              console.log('[CAP.Extractor] NoticeHTML via:', via);
-              return sanitizeAndNormalizeHTML(n.innerHTML.trim());
-            }
+            if (hasList || (textLen >= 30 && htmlLen >= 60)) { via = 'page scan + title anchor'; console.log('[CAP.Extractor] NoticeHTML via:', via); return sanitizeAndNormalizeHTML(n.innerHTML.trim()); }
             n = walker.nextNode();
           }
         }
       }
       const el = findFirst(FALLBACK.NOTICE);
-      if (el) {
-        via = 'FALLBACK_HASH';
-        console.log('[CAP.Extractor] NoticeHTML via:', via);
-        return sanitizeAndNormalizeHTML(el.innerHTML.trim());
-      }
+      if (el) { via = 'FALLBACK_HASH'; console.log('[CAP.Extractor] NoticeHTML via:', via); return sanitizeAndNormalizeHTML(el.innerHTML.trim()); }
       console.log('[CAP.Extractor] NoticeHTML via: none (empty)');
       return '';
     }
@@ -629,6 +515,15 @@ a,button{pointer-events:none}
 .cap-info-parse p{margin:0;line-height:inherit}
 .cap-info-parse ul{margin:0;padding-left:14px;line-height:inherit;list-style-position:outside}
 .cap-info-parse li{margin:0;line-height:inherit}
+@counter-style circled{system:fixed;symbols:① ② ③ ④ ⑤ ⑥ ⑦ ⑧ ⑨ ⑩;suffix:" "}
+.cap-info-parse ul,.cap-notice-parse ul{list-style:none;padding-left:0;margin:0}
+.cap-info-parse ul>li,.cap-notice-parse ul>li{position:relative;padding-left:1em;list-style:none}
+.cap-info-parse ul>li::before,.cap-notice-parse ul>li::before{content:"•";position:absolute;left:0}
+.cap-info-parse ul ul>li::before,.cap-notice-parse ul ul>li::before{content:"-"}
+.cap-info-parse ol,.cap-notice-parse ol{counter-reset:c;list-style:none;padding-left:0;margin:0}
+.cap-info-parse ol>li,.cap-notice-parse ol>li{counter-increment:c;position:relative;padding-left:1.2em;list-style:none}
+.cap-info-parse ol>li::before,.cap-notice-parse ol>li::before{content:counter(c,circled);position:absolute;left:0}
+.cap-info-parse ol ul>li::before,.cap-notice-parse ol ul>li::before{content:"-"}
 .cap-notice{background-color:var(--cap-bg-notice);padding:var(--cap-y-main);margin-top:0;display:flex;flex-direction:column;gap:8px}
 .cap-notice-title{font-size:var(--cap-fs-body);font-weight:var(--cap-fw-bold);color:var(--cap-label-neutral);line-height:var(--cap-lh-base)}
 .cap-notice-body{display:block}
@@ -636,8 +531,6 @@ a,button{pointer-events:none}
 .cap-notice-parse{font-size:var(--cap-fs-notice);color:var(--cap-label-alt);line-height:var(--cap-lh-base);white-space:normal;word-break:break-all;overflow-wrap:anywhere;font-feature-settings:"ss05"}
 .cap-notice-parse strong,.cap-notice-parse b{font-weight:var(--cap-fw-bold)}
 .cap-notice-parse p{margin:0;line-height:inherit}
-.cap-notice-parse ul{margin:0;padding-left:13px;line-height:inherit;list-style-position:outside}
-.cap-notice-parse li{margin:0;line-height:inherit}
 .cap-cta{padding:var(--cap-y-sub) var(--cap-x);background:linear-gradient(180deg,var(--cap-bg-notice) 0%,var(--cap-bg) 20.48%)}
 .cap-cta-button{width:100%;height:54px;border-radius:12px;background:var(--cap-primary);color:var(--cap-on-primary);font-size:var(--cap-fs-tab);font-weight:var(--cap-fw-bold);line-height:var(--cap-lh-tab);display:flex;align-items:center;justify-content:center}
 .is-hide-appbar .cap-header{display:none}
@@ -655,10 +548,7 @@ a,button{pointer-events:none}
 <section class="cap-hero">
 <div class="cap-hero-brand">
 <span class="cap-hero-logo"></span>
-<div class="cap-hero-text">
-<p class="cap-hero-bank"></p>
-<p class="cap-hero-product"></p>
-</div>
+<div class="cap-hero-text"><p class="cap-hero-bank"></p><p class="cap-hero-product"></p></div>
 </div>
 <div class="cap-stats">
 <div class="cap-stat"><p class="cap-stat-label">금리</p><p class="cap-stat-value"></p></div>
@@ -684,13 +574,7 @@ a,button{pointer-events:none}
       const logoSlot = qs(SEL.SLOT_LOGO);
       if (logoSlot) {
         logoSlot.innerHTML = '';
-        if (data.logoSrc) {
-          const img = document.createElement('img');
-          img.alt = '금융사 로고';
-          img.style.cssText = 'width:32px;height:32px;border-radius:9999px;object-fit:cover;';
-          img.src = data.logoSrc;
-          logoSlot.appendChild(img);
-        }
+        if (data.logoSrc) { const img = document.createElement('img'); img.alt = '금융사 로고'; img.style.cssText = 'width:32px;height:32px;border-radius:9999px;object-fit:cover;'; img.src = data.logoSrc; logoSlot.appendChild(img); }
       }
       const bankEl = qs(SEL.SLOT_BANK);
       const productEl = qs(SEL.SLOT_PRODUCT);
@@ -708,7 +592,8 @@ a,button{pointer-events:none}
     function replace(templateHTML) {
       const parser = new DOMParser();
       const doc = parser.parseFromString(templateHTML, 'text/html');
-      document.head.innerHTML = doc.head.innerHTML;
+      const newHead = doc.head.innerHTML;
+      document.head.innerHTML = newHead;
       document.body.innerHTML = doc.body.innerHTML;
     }
 
@@ -747,12 +632,7 @@ a,button{pointer-events:none}
       window.scrollTo(0, 0);
       await waitForRaf();
       await sleep(CAPTURE_STABILIZE_DELAY);
-      const dataUrl = await window.htmlToImage.toPng(target, {
-        pixelRatio: 2,
-        backgroundColor: '#ffffff',
-        skipAutoScale: true,
-        filter: (node) => node.id !== SEL.CAPTURE_BUTTON
-      });
+      const dataUrl = await window.htmlToImage.toPng(target, { pixelRatio: 2, backgroundColor: '#ffffff', skipAutoScale: true, filter: (node) => node.id !== SEL.CAPTURE_BUTTON });
       return dataUrl;
     }
 
@@ -767,12 +647,11 @@ a,button{pointer-events:none}
     }
 
     const BUTTON_STYLES = {
-      base: `pointer-events:auto !important;position:fixed;right:12px;bottom:12px;z-index:2147483647;padding:12px 16px;border-radius:12px;border:1px solid rgba(0,0,0,0.12);background:#111;color:#fff;font-size:14px;font-weight:700;font-family:-apple-system,BlinkMacSystemFont,sans-serif;box-shadow:0 8px 24px rgba(0,0,0,0.18);cursor:pointer;transition:transform 0.1s ease,box-shadow 0.1s ease;`,
+      base: `pointer-events:auto!important;position:fixed;right:12px;bottom:12px;z-index:2147483647;padding:12px 16px;border-radius:12px;border:1px solid rgba(0,0,0,0.12);background:#111;color:#fff;font-size:14px;font-weight:700;font-family:-apple-system,BlinkMacSystemFont,sans-serif;box-shadow:0 8px 24px rgba(0,0,0,0.18);cursor:pointer;transition:transform 0.1s ease,box-shadow 0.1s ease;`,
       hover: { transform: 'translateY(-2px)', boxShadow: '0 12px 32px rgba(0,0,0,0.24)' },
       normal: { transform: 'translateY(0)', boxShadow: '0 8px 24px rgba(0,0,0,0.18)' },
       colors: { default: '#111', success: '#059669', error: '#DC2626' }
     };
-
     const BUTTON_LABELS = ['PNG 캡쳐', '캡쳐 중…', '완료 ✓', '실패'];
 
     function fixButtonWidthByMaxLabel(btn, labels) {
@@ -781,11 +660,7 @@ a,button{pointer-events:none}
       btn.style.visibility = 'hidden';
       btn.style.width = 'auto';
       let maxWidth = 0;
-      for (const label of labels) {
-        btn.textContent = label;
-        const w = btn.getBoundingClientRect().width;
-        if (w > maxWidth) maxWidth = w;
-      }
+      for (const label of labels) { btn.textContent = label; const w = btn.getBoundingClientRect().width; if (w > maxWidth) maxWidth = w; }
       btn.textContent = originalText;
       btn.style.visibility = prevVisibility || '';
       btn.style.minWidth = `${Math.ceil(maxWidth)}px`;
@@ -802,28 +677,13 @@ a,button{pointer-events:none}
       btn.addEventListener('mouseleave', () => Object.assign(btn.style, BUTTON_STYLES.normal));
       btn.addEventListener('click', async () => {
         try {
-          btn.disabled = true;
-          btn.style.opacity = '0.7';
-          btn.textContent = '캡쳐 중…';
-          if (typeof onCapture === 'function') {
-            await onCapture();
-          } else {
-            const dataUrl = await execute();
-            download(dataUrl);
-          }
-          btn.textContent = '완료 ✓';
-          btn.style.background = BUTTON_STYLES.colors.success;
-          await sleep(1200);
+          btn.disabled = true; btn.style.opacity = '0.7'; btn.textContent = '캡쳐 중…';
+          if (typeof onCapture === 'function') { await onCapture(); } else { const dataUrl = await execute(); download(dataUrl); }
+          btn.textContent = '완료 ✓'; btn.style.background = BUTTON_STYLES.colors.success; await sleep(1200);
         } catch (e) {
-          console.error('[CAP.Capture] Failed:', e);
-          btn.textContent = '실패';
-          btn.style.background = BUTTON_STYLES.colors.error;
-          await sleep(1500);
+          console.error('[CAP.Capture] Failed:', e); btn.textContent = '실패'; btn.style.background = BUTTON_STYLES.colors.error; await sleep(1500);
         } finally {
-          btn.disabled = false;
-          btn.style.opacity = '1';
-          btn.style.background = BUTTON_STYLES.colors.default;
-          btn.textContent = 'PNG 캡쳐';
+          btn.disabled = false; btn.style.opacity = '1'; btn.style.background = BUTTON_STYLES.colors.default; btn.textContent = 'PNG 캡쳐';
         }
       });
       document.body.appendChild(btn);
@@ -852,15 +712,9 @@ a,button{pointer-events:none}
           const hasIdentity = Boolean((data.bank && data.bank.trim()) || (data.product && data.product.trim()));
           const hasStats = Array.isArray(data.statValues) && data.statValues.some(v => v && String(v).trim());
           const hasContent = Boolean((data.infoHTML && data.infoHTML.trim()) || (data.noticeHTML && data.noticeHTML.trim()) || hasStats);
-          console.log(`[CAP.Main] Attempt ${i + 1}/${EXTRACT_MAX_RETRIES}:`, {
-            hasIdentity, hasStats, hasContent,
-            bank: data.bank?.slice(0, 20) || '(empty)',
-            product: data.product?.slice(0, 20) || '(empty)'
-          });
+          console.log(`[CAP.Main] Attempt ${i + 1}/${EXTRACT_MAX_RETRIES}:`, { hasIdentity, hasStats, hasContent, bank: data.bank?.slice(0, 20) || '(empty)', product: data.product?.slice(0, 20) || '(empty)' });
           if (hasIdentity && hasContent) return data;
-        } catch (e) {
-          console.warn(`[CAP.Main] Attempt ${i + 1}/${EXTRACT_MAX_RETRIES} error:`, e);
-        }
+        } catch (e) { console.warn(`[CAP.Main] Attempt ${i + 1}/${EXTRACT_MAX_RETRIES} error:`, e); }
         await sleep(EXTRACT_RETRY_DELAY);
       }
       console.error('[CAP.Main] All extract attempts failed. Check selectors or page structure.');
@@ -868,15 +722,9 @@ a,button{pointer-events:none}
     }
 
     async function run() {
-      if (!shouldRun()) {
-        console.log('[CAP.Main] capture=true not set, script skipped');
-        return;
-      }
+      if (!shouldRun()) { console.log('[CAP.Main] capture=true not set, script skipped'); return; }
       const data = await extractWithRetry();
-      if (!data) {
-        console.error('[CAP.Main] Failed to extract data');
-        return;
-      }
+      if (!data) { console.error('[CAP.Main] Failed to extract data'); return; }
       console.log('[CAP.Main] Extracted data:', data);
       replace(HTML);
       await sleep(0);
@@ -884,7 +732,7 @@ a,button{pointer-events:none}
       applyOptions(params);
       inject(data);
       createButton();
-      console.log('[CAP.Main] Template v1.5.4 ready');
+      console.log('[CAP.Main] Template v1.5.6 ready');
     }
 
     return { run };
