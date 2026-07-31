@@ -650,6 +650,122 @@
       color: var(--color-body);
     }
   }
+  .datatable-bottom {
+    .datatable-wrapper & {
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      align-items: start;
+      margin-top: 1rem;
+      gap: 1rem;
+      @media (min-width: 640px) {
+        flex-direction: row;
+        align-items: center;
+      }
+    }
+    .datatable-wrapper & .datatable-info {
+      color: var(--color-body);
+      font-size: 0.875rem;
+    }
+    .datatable-wrapper & .datatable-pagination .datatable-pagination-list {
+      display: flex;
+      align-items: center;
+      height: 2rem;
+      font-size: 0.875rem;
+    }
+    .datatable-wrapper & .datatable-pagination .datatable-pagination-list-item-link {
+      display: flex;
+      align-items: center;
+      color: var(--color-body);
+      background-color: var(--color-neutral-secondary-medium);
+      font-weight: 500;
+      padding-left: 0.75rem;
+      padding-right: 0.75rem;
+      height: 2rem;
+      font-size: 0.875rem;
+      border-top: 1px solid var(--color-default);
+      border-bottom: 1px solid var(--color-default);
+      border-right: 1px solid var(--color-default);
+    }
+    .datatable-wrapper & .datatable-pagination .datatable-pagination-list-item:hover .datatable-pagination-list-item-link {
+      color: var(--color-heading);
+      background-color: var(--color-neutral-tertiary-medium);
+    }
+    .datatable-wrapper & .datatable-pagination .datatable-pagination-list-item:first-of-type {
+      position: relative;
+    }
+    .datatable-wrapper & .datatable-pagination .datatable-pagination-list-item:last-of-type {
+      position: relative;
+    }
+    .datatable-wrapper & .datatable-pagination .datatable-pagination-list-item.datatable-active .datatable-pagination-list-item-link {
+      color: var(--color-fg-brand);
+      background-color: var(--color-neutral-tertiary-medium);
+    }
+    .datatable-wrapper & .datatable-pagination .datatable-pagination-list-item:first-of-type .datatable-pagination-list-item-link {
+      border-top-left-radius: var(--radius-base);
+      border-bottom-left-radius: var(--radius-base);
+      border-left: 1px solid var(--color-default);
+    }
+    .datatable-wrapper & .datatable-pagination .datatable-pagination-list-item:last-of-type .datatable-pagination-list-item-link {
+      border-top-right-radius: var(--radius-base);
+      border-bottom-right-radius: var(--radius-base);
+      border-left: 0;
+    }
+    .datatable-wrapper & .datatable-pagination .datatable-pagination-list-item-link:hover {
+      background-color: var(--color-neutral-secondary-medium);
+      color: var(--color-body);
+    }
+  }
+  .datatable-pagination {
+    .datatable-wrapper .datatable-bottom & .datatable-pagination-list {
+      display: flex;
+      align-items: center;
+      height: 2rem;
+      font-size: 0.875rem;
+    }
+    .datatable-wrapper .datatable-bottom & .datatable-pagination-list-item-link {
+      display: flex;
+      align-items: center;
+      color: var(--color-body);
+      background-color: var(--color-neutral-secondary-medium);
+      font-weight: 500;
+      padding-left: 0.75rem;
+      padding-right: 0.75rem;
+      height: 2rem;
+      font-size: 0.875rem;
+      border-top: 1px solid var(--color-default);
+      border-bottom: 1px solid var(--color-default);
+      border-right: 1px solid var(--color-default);
+    }
+    .datatable-wrapper .datatable-bottom & .datatable-pagination-list-item:hover .datatable-pagination-list-item-link {
+      color: var(--color-heading);
+      background-color: var(--color-neutral-tertiary-medium);
+    }
+    .datatable-wrapper .datatable-bottom & .datatable-pagination-list-item:first-of-type {
+      position: relative;
+    }
+    .datatable-wrapper .datatable-bottom & .datatable-pagination-list-item:last-of-type {
+      position: relative;
+    }
+    .datatable-wrapper .datatable-bottom & .datatable-pagination-list-item.datatable-active .datatable-pagination-list-item-link {
+      color: var(--color-fg-brand);
+      background-color: var(--color-neutral-tertiary-medium);
+    }
+    .datatable-wrapper .datatable-bottom & .datatable-pagination-list-item:first-of-type .datatable-pagination-list-item-link {
+      border-top-left-radius: var(--radius-base);
+      border-bottom-left-radius: var(--radius-base);
+      border-left: 1px solid var(--color-default);
+    }
+    .datatable-wrapper .datatable-bottom & .datatable-pagination-list-item:last-of-type .datatable-pagination-list-item-link {
+      border-top-right-radius: var(--radius-base);
+      border-bottom-right-radius: var(--radius-base);
+      border-left: 0;
+    }
+    .datatable-wrapper .datatable-bottom & .datatable-pagination-list-item-link:hover {
+      background-color: var(--color-neutral-secondary-medium);
+      color: var(--color-body);
+    }
+  }
   .absolute {
     position: absolute;
   }
@@ -1507,6 +1623,15 @@
       filter: none !important;
     }
   }
+  .apexcharts-legend-series {
+    .apexcharts-canvas & {
+      margin-left: 0.5rem !important;
+      margin-right: 0.5rem !important;
+      margin-bottom: 0.25rem !important;
+      display: flex !important;
+      align-items: center !important;
+    }
+  }
   .apexcharts-tooltip {
     .apexcharts-canvas & {
       background-color: primary !important;
@@ -1555,6 +1680,65 @@
     }
     .dark .apexcharts-canvas & .apexcharts-tooltip-text-y-value {
       color: white !important;
+    }
+  }
+  .datatable-top {
+    .datatable-wrapper & {
+      display: flex;
+      justify-content: space-between;
+      flex-direction: column-reverse;
+      align-items: start;
+      gap: 1rem;
+      margin-bottom: 1rem;
+      @media (min-width: 640px) {
+        flex-direction: row-reverse;
+        align-items: center;
+      }
+    }
+    .datatable-wrapper & .datatable-dropdown {
+      color: var(--color-body);
+      font-size: 0.875rem;
+    }
+    .datatable-wrapper & .datatable-dropdown .datatable-selector {
+      background-color: var(--color-neutral-secondary-soft);
+      color: var(--color-heading);
+      font-size: 0.875rem;
+      border: 1px solid var(--color-default);
+      border-radius: var(--radius-base);
+      margin-right: 0.25rem;
+      min-width: 4rem;
+    }
+  }
+  .apexcharts-tooltip-marker {
+    :is([dir=rtl]) .apexcharts-tooltip & {
+      margin-right: 0px !important;
+      margin-left: 0.375rem !important;
+    }
+  }
+  .datatable-dropdown {
+    .datatable-wrapper .datatable-top & {
+      color: var(--color-body);
+      font-size: 0.875rem;
+    }
+    .datatable-wrapper .datatable-top & .datatable-selector {
+      background-color: var(--color-neutral-secondary-soft);
+      color: var(--color-heading);
+      font-size: 0.875rem;
+      border: 1px solid var(--color-default);
+      border-radius: var(--radius-base);
+      margin-right: 0.25rem;
+      min-width: 4rem;
+    }
+  }
+  .datatable-selector {
+    .datatable-wrapper .datatable-top .datatable-dropdown & {
+      background-color: var(--color-neutral-secondary-soft);
+      color: var(--color-heading);
+      font-size: 0.875rem;
+      border: 1px solid var(--color-default);
+      border-radius: var(--radius-base);
+      margin-right: 0.25rem;
+      min-width: 4rem;
     }
   }
   .apexcharts-tooltip-title {
@@ -1614,6 +1798,52 @@
     .apexcharts-canvas &:before {
       border-width: 10px !important;
       margin-left: -10px !important;
+    }
+  }
+  .datatable-pagination-list-item-link {
+    .datatable-wrapper .datatable-bottom .datatable-pagination & {
+      display: flex;
+      align-items: center;
+      color: var(--color-body);
+      background-color: var(--color-neutral-secondary-medium);
+      font-weight: 500;
+      padding-left: 0.75rem;
+      padding-right: 0.75rem;
+      height: 2rem;
+      font-size: 0.875rem;
+      border-top: 1px solid var(--color-default);
+      border-bottom: 1px solid var(--color-default);
+      border-right: 1px solid var(--color-default);
+    }
+    .datatable-wrapper .datatable-bottom .datatable-pagination .datatable-pagination-list-item:hover & {
+      color: var(--color-heading);
+      background-color: var(--color-neutral-tertiary-medium);
+    }
+    .datatable-wrapper .datatable-bottom .datatable-pagination .datatable-pagination-list-item.datatable-active & {
+      color: var(--color-fg-brand);
+      background-color: var(--color-neutral-tertiary-medium);
+    }
+    .datatable-wrapper .datatable-bottom .datatable-pagination .datatable-pagination-list-item:first-of-type & {
+      border-top-left-radius: var(--radius-base);
+      border-bottom-left-radius: var(--radius-base);
+      border-left: 1px solid var(--color-default);
+    }
+    .datatable-wrapper .datatable-bottom .datatable-pagination .datatable-pagination-list-item:last-of-type & {
+      border-top-right-radius: var(--radius-base);
+      border-bottom-right-radius: var(--radius-base);
+      border-left: 0;
+    }
+    .datatable-wrapper .datatable-bottom .datatable-pagination &:hover {
+      background-color: var(--color-neutral-secondary-medium);
+      color: var(--color-body);
+    }
+  }
+  .datatable-pagination-list {
+    .datatable-wrapper .datatable-bottom .datatable-pagination & {
+      display: flex;
+      align-items: center;
+      height: 2rem;
+      font-size: 0.875rem;
     }
   }
   .block {
@@ -1828,6 +2058,48 @@
   .max-w-sm {
     max-width: var(--container-sm);
   }
+  .datatable-input {
+    .datatable-wrapper .datatable-search & {
+      color: var(--color-heading);
+      font-size: 0.875rem;
+      border: 1px solid var(--color-default);
+      border-radius: var(--radius-base);
+      background-color: var(--color-neutral-secondary-soft);
+      min-width: 16rem;
+    }
+    .datatable-wrapper & {
+      color: var(--color-heading);
+      font-size: 0.875rem;
+      border: 1px solid var(--color-default);
+      border-radius: var(--radius-base);
+      background-color: var(--color-neutral-secondary-soft);
+      min-width: 16rem;
+    }
+    .datatable-wrapper thead th & {
+      background-color: var(--color-neutral-primary);
+      font-weight: 400;
+      color: var(--color-heading);
+      padding-top: .35rem;
+      padding-bottom: .35rem;
+      min-width: 0;
+    }
+    .datatable-wrapper .datatable-search &:focus {
+      border-color: var(--color-brand);
+    }
+  }
+  .datatable-search {
+    .datatable-wrapper & .datatable-input {
+      color: var(--color-heading);
+      font-size: 0.875rem;
+      border: 1px solid var(--color-default);
+      border-radius: var(--radius-base);
+      background-color: var(--color-neutral-secondary-soft);
+      min-width: 16rem;
+    }
+    .datatable-wrapper & .datatable-input:focus {
+      border-color: var(--color-brand);
+    }
+  }
   .min-w-0 {
     min-width: 0;
   }
@@ -1840,8 +2112,14 @@
   .flex-shrink-0 {
     flex-shrink: 0;
   }
+  .flex-grow {
+    flex-grow: 1;
+  }
   .grow {
     flex-grow: 1;
+  }
+  .border-collapse {
+    border-collapse: collapse;
   }
   .-translate-x-full {
     --tw-translate-x: -100%;
@@ -1986,6 +2264,16 @@
   }
   .overflow-hidden {
     overflow: hidden;
+  }
+  .datatable-container {
+    .datatable-wrapper & thead tr.search-filtering-row th {
+      padding-top: 0;
+    }
+    .datatable-wrapper & {
+      overflow-x: auto;
+      border: 1px solid var(--color-default);
+      border-radius: var(--radius-base);
+    }
   }
   .overflow-x-auto {
     overflow-x: auto;
@@ -2157,6 +2445,12 @@
       padding-top: 0.75rem !important;
     }
   }
+  .datatable-active {
+    .datatable-wrapper .datatable-bottom .datatable-pagination .datatable-pagination-list-item& .datatable-pagination-list-item-link {
+      color: var(--color-fg-brand);
+      background-color: var(--color-neutral-tertiary-medium);
+    }
+  }
   .selectedCell {
     background-color: var(--color-neutral-secondary-medium);
     .dark & {
@@ -2313,6 +2607,18 @@
       fill: white !important;
     }
   }
+  .apexcharts-gridline {
+    stroke: var(--color-default) !important;
+    .dark & {
+      stroke: var(--color-default) !important;
+    }
+  }
+  .apexcharts-xcrosshairs {
+    stroke: var(--color-default) !important;
+    .dark & {
+      stroke: var(--color-default) !important;
+    }
+  }
   .apexcharts-ycrosshairs {
     stroke: var(--color-default) !important;
     .dark & {
@@ -2321,6 +2627,16 @@
   }
   .object-cover {
     object-fit: cover;
+  }
+  .apexcharts-legend {
+    .apexcharts-canvas & {
+      padding: 0 !important;
+    }
+  }
+  .apexcharts-tooltip-y-group {
+    .apexcharts-canvas .apexcharts-tooltip-series-group.apexcharts-active & {
+      padding: 0 !important;
+    }
   }
   .p-0 {
     padding: 0;
@@ -2403,6 +2719,11 @@
   .pt-4 {
     padding-top: calc(var(--spacing) * 4);
   }
+  .search-filtering-row {
+    .datatable-wrapper .datatable-container thead tr& th {
+      padding-top: 0;
+    }
+  }
   .apexcharts-legend-text {
     .apexcharts-canvas & {
       font-size: 0.75rem !important;
@@ -2432,6 +2753,11 @@
   .pl-4 {
     padding-left: calc(var(--spacing) * 4);
   }
+  .datatable-empty {
+    .datatable-wrapper .datatable-table & {
+      text-align: center;
+    }
+  }
   .text-center {
     text-align: center;
   }
@@ -2455,6 +2781,28 @@
     font-size: var(--text-xs);
     line-height: var(--tw-leading, var(--text-xs--line-height));
   }
+  .apexcharts-datalabels {
+    .apexcharts-canvas & .apexcharts-text.apexcharts-pie-label {
+      font-size: 0.75rem,[object Object] !important;
+      font-weight: 600 !important;
+      text-shadow: none !important;
+      filter: none !important;
+    }
+  }
+  .apexcharts-pie-label {
+    .apexcharts-canvas .apexcharts-datalabels .apexcharts-text& {
+      font-size: 0.75rem,[object Object] !important;
+      font-weight: 600 !important;
+      text-shadow: none !important;
+      filter: none !important;
+    }
+  }
+  .apexcharts-xaxistooltip-text {
+    .apexcharts-canvas & {
+      font-weight: 400 !important;
+      font-size: 0.875rem !important;
+    }
+  }
   .apexcharts-tooltip-text-y-label {
     .apexcharts-canvas .apexcharts-tooltip & {
       color: var(--color-body) !important;
@@ -2471,6 +2819,12 @@
     }
     .dark .apexcharts-canvas .apexcharts-tooltip & {
       color: white !important;
+    }
+  }
+  .datatable-info {
+    .datatable-wrapper .datatable-bottom & {
+      color: var(--color-body);
+      font-size: 0.875rem;
     }
   }
   .text-\[11px\] {
@@ -2526,6 +2880,30 @@
   }
   .whitespace-pre-wrap {
     white-space: pre-wrap;
+  }
+  .datatable-sorter {
+    .datatable-wrapper .datatable-table thead th & {
+      text-transform: uppercase;
+    }
+    .datatable-wrapper .datatable-table thead th &:hover {
+      color: var(--color-heading);
+    }
+    .datatable-wrapper .datatable-table thead th.datatable-ascending & {
+      color: var(--color-heading);
+    }
+    .datatable-wrapper .datatable-table thead th.datatable-descending & {
+      color: var(--color-heading);
+    }
+  }
+  .datatable-ascending {
+    .datatable-wrapper .datatable-table thead th& .datatable-sorter {
+      color: var(--color-heading);
+    }
+  }
+  .datatable-descending {
+    .datatable-wrapper .datatable-table thead th& .datatable-sorter {
+      color: var(--color-heading);
+    }
   }
   .text-black {
     color: var(--color-black);
@@ -2642,6 +3020,10 @@
   }
   .backdrop-blur-sm {
     --tw-backdrop-blur: blur(var(--blur-sm));
+    -webkit-backdrop-filter: var(--tw-backdrop-blur,) var(--tw-backdrop-brightness,) var(--tw-backdrop-contrast,) var(--tw-backdrop-grayscale,) var(--tw-backdrop-hue-rotate,) var(--tw-backdrop-invert,) var(--tw-backdrop-opacity,) var(--tw-backdrop-saturate,) var(--tw-backdrop-sepia,);
+    backdrop-filter: var(--tw-backdrop-blur,) var(--tw-backdrop-brightness,) var(--tw-backdrop-contrast,) var(--tw-backdrop-grayscale,) var(--tw-backdrop-hue-rotate,) var(--tw-backdrop-invert,) var(--tw-backdrop-opacity,) var(--tw-backdrop-saturate,) var(--tw-backdrop-sepia,);
+  }
+  .backdrop-filter {
     -webkit-backdrop-filter: var(--tw-backdrop-blur,) var(--tw-backdrop-brightness,) var(--tw-backdrop-contrast,) var(--tw-backdrop-grayscale,) var(--tw-backdrop-hue-rotate,) var(--tw-backdrop-invert,) var(--tw-backdrop-opacity,) var(--tw-backdrop-saturate,) var(--tw-backdrop-sepia,);
     backdrop-filter: var(--tw-backdrop-blur,) var(--tw-backdrop-brightness,) var(--tw-backdrop-contrast,) var(--tw-backdrop-grayscale,) var(--tw-backdrop-hue-rotate,) var(--tw-backdrop-invert,) var(--tw-backdrop-opacity,) var(--tw-backdrop-saturate,) var(--tw-backdrop-sepia,);
   }
@@ -4110,6 +4492,9 @@
 @media (max-width: 1314px) {
   body {
     padding: 0;
+    min-height: 100dvh;
+    align-items: stretch;
+    justify-content: flex-start;
   }
   #layout-root {
     max-width: 100%;
