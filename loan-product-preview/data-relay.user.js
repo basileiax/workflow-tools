@@ -1,13 +1,11 @@
 // ==UserScript==
 // @name         Loan Preview Data Relay
 // @namespace    data-relay
-// @version      2.1.0
-// @description  [2.1.0] 호스트 설정 수신 + API 호출/검증 + 원시값 postMessage 전송만 담당. 포맷팅/HTML 정제/캡처는 전부 통합 도구 CaptureEngine에서 수행
+// @version      2.2.0
+// @description  [2.2.0] API 호출/검증 + 원시값 postMessage 전송만 담당(포맷팅/HTML 정제/캡처는 전부 통합 도구 CaptureEngine에서 수행). 내부 네임스페이스를 Relay로, postMessage 타입을 RELAY_DATA/RELAY_ERROR로 정리, 사용하지 않는 권한(GM_download/unsafeWindow) 제거
 // @include      *://*/*loan-product-preview*
 // @connect      *
 // @grant        GM_xmlhttpRequest
-// @grant        GM_download
-// @grant        unsafeWindow
 // @run-at       document-idle
 // @updateURL    https://AirHelper.github.io/workflow-tools/loan-product-preview/data-relay.user.js
 // @downloadURL  https://AirHelper.github.io/workflow-tools/loan-product-preview/data-relay.user.js
@@ -16,9 +14,9 @@
 (function () {
   'use strict';
 
-  const CAP = {};
+  const Relay = {};
 
-  CAP.Config = Object.freeze({
+  Relay.Config = Object.freeze({
     API_TIMEOUT: 15000,
     IMAGE_TIMEOUT: 10000
   });
@@ -36,9 +34,9 @@
   }
 
   /* ===========================================================================
-   * CAP.Validator — 오류 모달 감지 (Circuit Breaker)
+   * Relay.Validator — 오류 모달 감지 (Circuit Breaker)
    * ========================================================================= */
-  CAP.Validator = (function () {
+  Relay.Validator = (function () {
     function checkBlockers() {
       const dialog = document.querySelector('[role="dialog"][aria-modal="true"]');
       if (!dialog) return false;
@@ -51,7 +49,7 @@
       if (hasConfirmBtn) {
         const msgEl = dialog.querySelector('p[class*="css-"], div[class*="css-"]');
         const msg = msgEl ? msgEl.textContent.trim() : 'Unknown Error';
-        console.warn(`[CAP.Validator] Execution Blocked. Error modal detected: "${msg}"`);
+        console.warn(`[Relay.Validator] Execution Blocked. Error modal detected: "${msg}"`);
         return true;
       }
       return false;
@@ -61,10 +59,10 @@
   })();
 
   /* ===========================================================================
-   * CAP.Image — CORS 우회 Base64 변환
+   * Relay.Image — CORS 우회 Base64 변환
    * ========================================================================= */
-  CAP.Image = (function () {
-    const { IMAGE_TIMEOUT } = CAP.Config;
+  Relay.Image = (function () {
+    const { IMAGE_TIMEOUT } = Relay.Config;
 
     function toDataURL(src) {
       return new Promise((resolve) => {
@@ -96,11 +94,11 @@
   })();
 
   /* ===========================================================================
-   * CAP.ApiSource — API 호출 + 검증 + 원시값 매핑 (포맷팅/HTML 정제는 하지 않음)
+   * Relay.ApiSource — API 호출 + 검증 + 원시값 매핑 (포맷팅/HTML 정제는 하지 않음)
    * ========================================================================= */
-  CAP.ApiSource = (function () {
-    const { toDataURL } = CAP.Image;
-    const { API_TIMEOUT } = CAP.Config;
+  Relay.ApiSource = (function () {
+    const { toDataURL } = Relay.Image;
+    const { API_TIMEOUT } = Relay.Config;
 
     const API_PATH_PREFIX = '/api/v3/public/loan-product-previews/';
 
@@ -207,9 +205,9 @@
   })();
 
   /* ===========================================================================
-   * CAP.Main — 오케스트레이션
+   * Relay.Main — 오케스트레이션
    * ========================================================================= */
-  CAP.Main = (function () {
+  Relay.Main = (function () {
     function shouldRun() {
       const params = new URLSearchParams(window.location.search);
       return params.get('capture') === 'true';
@@ -231,33 +229,33 @@
 
     async function run() {
       if (!shouldRun()) {
-        console.log('[CAP.Main] capture=true not set, script skipped');
+        console.log('[Relay.Main] capture=true not set, script skipped');
         return;
       }
 
-      if (CAP.Validator.checkBlockers()) {
-        postToParent({ type: 'CAP_ERROR', code: null, message: 'DOM 오류 모달이 감지되었습니다.' });
+      if (Relay.Validator.checkBlockers()) {
+        postToParent({ type: 'RELAY_ERROR', code: null, message: 'DOM 오류 모달이 감지되었습니다.' });
         return;
       }
 
       try {
-        const id = CAP.ApiSource.getPreviewId();
+        const id = Relay.ApiSource.getPreviewId();
         if (!id) {
           const err = new Error('시안 ID가 없습니다');
           err.code = null;
           throw err;
         }
 
-        const apiOrigin = CAP.ApiSource.getApiOrigin();
+        const apiOrigin = Relay.ApiSource.getApiOrigin();
         if (!apiOrigin) {
           const err = new Error('API 서버 설정이 전달되지 않았습니다');
           err.code = null;
           throw err;
         }
 
-        const json = await CAP.ApiSource.requestJsonForId(id, apiOrigin);
-        const apiData = CAP.ApiSource.validateResponse(json);
-        const data = await CAP.ApiSource.mapApiData(apiData);
+        const json = await Relay.ApiSource.requestJsonForId(id, apiOrigin);
+        const apiData = Relay.ApiSource.validateResponse(json);
+        const data = await Relay.ApiSource.mapApiData(apiData);
 
         if (!isValidProductData(data)) {
           const err = new Error('캡처에 필요한 상품 정보가 부족합니다');
@@ -265,16 +263,16 @@
           throw err;
         }
 
-        postToParent({ type: 'CAP_DATA', payload: data });
-        console.log('[CAP.Main] CAP_DATA sent:', { bank: data.bank, product: data.product });
+        postToParent({ type: 'RELAY_DATA', payload: data });
+        console.log('[Relay.Main] RELAY_DATA sent:', { bank: data.bank, product: data.product });
       } catch (e) {
-        console.error('[CAP.Main] failed:', e);
-        postToParent({ type: 'CAP_ERROR', code: e.code || null, message: e.message || String(e) });
+        console.error('[Relay.Main] failed:', e);
+        postToParent({ type: 'RELAY_ERROR', code: e.code || null, message: e.message || String(e) });
       }
     }
 
     return { run };
   })();
 
-  CAP.Main.run();
+  Relay.Main.run();
 })();
