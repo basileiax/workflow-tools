@@ -1,8 +1,10 @@
 // ==UserScript==
 // @name         Loan Preview Data Relay
 // @namespace    data-relay
-// @version      2.2.0
-// @description  [2.2.0] API 호출/검증 + 원시값 postMessage 전송만 담당(포맷팅/HTML 정제/캡처는 전부 통합 도구 CaptureEngine에서 수행). 내부 네임스페이스를 Relay로, postMessage 타입을 RELAY_DATA/RELAY_ERROR로 정리, 사용하지 않는 권한(GM_download/unsafeWindow) 제거
+// @version      2.3.0
+// @description  [2.3.0] API 호출/검증 + 원시값 postMessage 전송만 담당(포맷팅/HTML 정제/캡처는 전부 통합 도구 CaptureEngine에서 수행).
+//               내부 네임스페이스를 Relay로, postMessage 타입을 RELAY_DATA/RELAY_ERROR로 정리, 사용하지 않는 권한(GM_download/unsafeWindow) 제거.
+//               promotion(프로모션 문구) 필드를 원시 문자열 그대로 매핑해 전달하는 기능 추가.
 // @include      *://*/*loan-product-preview*
 // @connect      *
 // @grant        GM_xmlhttpRequest
@@ -162,7 +164,8 @@
         interestRate: apiData.interestRate,
         amountLimit: apiData.amountLimit,
         infoRaw: apiData.info || "",
-        noticeRaw: apiData.notice || ""
+        noticeRaw: apiData.notice || "",
+        promotion: apiData.promotion || ""
       };
     }
     function requestJsonForId(id, apiOrigin) {
